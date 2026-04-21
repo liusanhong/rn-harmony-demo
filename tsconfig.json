@@ -1,0 +1,25 @@
+{
+  "extends": "@react-native/typescript-config/tsconfig.json",
+  "compilerOptions": {
+    /* Visit https://aka.ms/tsconfig.json to read more about this file */
+
+    /* Completeness */
+    "skipLibCheck": true /* Skip type checking all .d.ts files. */,
+    "baseUrl": "./src" /* Base directory to resolve non-absolute module names. */,
+    "paths": {
+      "@/assets/*": ["assets/*"],
+      "@/iconfont/*": ["iconfont/*"],
+      "@/components/*": ["components/*"],
+      "@/config/*": ["config/*"],
+      "@/models/*": ["models/*"],
+      "@/modules/*": ["modules/*"],
+      "@/styles/*": ["styles/*"],
+      "@/navigators/*": ["navigators/*"],
+      "@/services/*": ["services/*"],
+      "@/utils/*": ["utils/*"],
+      "@/images/*": ["images/*"],
+      "@/comps/*": ["comps/*"],
+      "@/constants/*": ["constants/*"]
+    }
+  }
+}

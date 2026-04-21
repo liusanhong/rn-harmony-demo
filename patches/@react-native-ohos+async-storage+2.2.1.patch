@@ -1,0 +1,17 @@
+diff --git a/node_modules/@react-native-ohos/async-storage/package.json b/node_modules/@react-native-ohos/async-storage/package.json
+index 62bd923..26376be 100644
+--- a/node_modules/@react-native-ohos/async-storage/package.json
++++ b/node_modules/@react-native-ohos/async-storage/package.json
+@@ -107,6 +107,11 @@
+     }
+   },
+   "harmony": {
+-    "alias": "@react-native-async-storage/async-storage"
++    "alias": "@react-native-async-storage/async-storage",
++    "redirectInternalImports": true,
++    "autolinking": {
++      "cmakeLibraryTargetName": "rnoh_async_storage",
++      "ohPackageName": "@react-native-ohos/async-storage"
++    }
+   }
+ }

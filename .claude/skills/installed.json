@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "skills": {
+    "git-commit": {
+      "name": "git-commit",
+      "version": "1.0.2",
+      "description": "生成符合企业内部规范的 Git Commit Message",
+      "installedAt": "2026-04-14T03:15:42.932Z",
+      "lastUpdated": "2026-04-14T03:15:42.932Z"
+    },
+    "rnoh-link-package": {
+      "name": "rnoh-link-package",
+      "version": "1.0.0",
+      "description": "为鸿蒙端（RNOH）链接第三方 React Native 包",
+      "installedAt": "2026-04-18T00:00:00.000Z",
+      "lastUpdated": "2026-04-18T00:00:00.000Z"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "git-commit",
+  "version": "1.0.2",
+  "description": "生成符合企业内部规范的 Git Commit Message"
+}

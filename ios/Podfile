@@ -1,0 +1,88 @@
+# Resolve react_native_pods.rb with node to allow for hoisting
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native/scripts/react_native_pods.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+platform :ios, min_ios_version_supported
+prepare_react_native_project!
+
+linkage = ENV['USE_FRAMEWORKS']
+if linkage != nil
+  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
+  use_frameworks! :linkage => linkage.to_sym
+end
+
+target 'HarmonyRNBase' do
+  config = use_native_modules!
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
+  )
+
+  post_install do |installer|
+    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false,
+      # :ccache_enabled => true
+    )
+
+    # Force all pods to use iOS 15.1+ deployment target (fixes RCT-Folly aligned deallocation error)
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.1
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        end
+      end
+    end
+
+    # Fix fmt 11.0.2 consteval error with Apple Clang 21+ (Xcode 26+)
+    # fmt's consteval detection only blocks Apple Clang < 14, but Clang 21 is also affected
+    fmt_base_h = Dir.glob("#{installer.sandbox.root}/fmt/include/fmt/base.h").first
+    if fmt_base_h
+      content = File.read(fmt_base_h)
+      patched = content.gsub(
+        /defined\(__apple_build_version__\) && __apple_build_version__ < \d+L*/,
+        'defined(__apple_build_version__) && __apple_build_version__ < 22000000L'
+      )
+      if content != patched
+        File.chmod(0644, fmt_base_h)
+        File.write(fmt_base_h, patched)
+        Pod::UI.puts "Patched fmt/base.h to disable consteval for Apple Clang 21+".green
+      end
+    end
+
+    # Fix RCT-Folly New.h compilation errors with Apple Clang 21+ (Xcode 26+)
+    # FOLLY_CREATE_QUAL_INVOKER template SFINAE fails for ::operator delete on Apple Clang 21
+    # Replace the entire operator delete section with simple inline wrappers
+    new_h = Dir.glob("#{installer.sandbox.root}/RCT-Folly/folly/lang/New.h").first
+    if new_h
+      content = File.read(new_h)
+      # Disable builtin operators (not fully supported on Apple Clang 21)
+      patched = content.gsub(
+        /constexpr auto op_del_builtin_\s*=\s*FOLLY_HAS_BUILTIN\(__builtin_operator_del\) >= 201802L;/,
+        'constexpr auto op_del_builtin_ = false;'
+      )
+      # Replace FOLLY_CREATE_QUAL_INVOKER for operator delete with explicit overloads
+      patched = patched.gsub(
+        /FOLLY_CREATE_QUAL_INVOKER\(op_del_library_fn_, ::operator delete\);/,
+        "struct op_del_library_fn_ {\n" \
+        "      FOLLY_ERASE void operator()(void* p) const noexcept { ::operator delete(p); }\n" \
+        "      FOLLY_ERASE void operator()(void* p, std::size_t) const noexcept { ::operator delete(p); }\n" \
+        "      FOLLY_ERASE void operator()(void* p, std::align_val_t a) const noexcept { ::operator delete(p, a); }\n" \
+        "      FOLLY_ERASE void operator()(void* p, std::size_t, std::align_val_t a) const noexcept { ::operator delete(p, a); }\n" \
+        "    };"
+      )
+      if content != patched
+        File.chmod(0644, new_h)
+        File.write(new_h, patched)
+        Pod::UI.puts "Patched RCT-Folly New.h for Apple Clang 21+ compatibility".green
+      end
+    end
+  end
+end
